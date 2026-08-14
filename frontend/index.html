@@ -1,0 +1,111 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>GS Mailer - Email Marketing Platform</title>
+    <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+    <div id="app">
+        <!-- Sidebar -->
+        <nav id="sidebar">
+            <div class="logo">
+                <h1>GS Mailer</h1>
+                <span class="version">v2.0</span>
+            </div>
+            <ul class="nav-menu">
+                <li class="nav-item active" data-page="dashboard">
+                    <span class="icon">📊</span> Dashboard
+                </li>
+                <li class="nav-item" data-page="campaigns">
+                    <span class="icon">📧</span> Campaigns
+                </li>
+                <li class="nav-item" data-page="contacts">
+                    <span class="icon">👥</span> Contacts
+                </li>
+                <li class="nav-item" data-page="templates">
+                    <span class="icon">📝</span> Templates
+                </li>
+                <li class="nav-item" data-page="settings">
+                    <span class="icon">⚙️</span> Settings
+                </li>
+            </ul>
+            <div class="sidebar-footer">
+                <button id="logoutBtn" class="logout-btn">🚪 Logout</button>
+            </div>
+        </nav>
+
+        <!-- Main Content -->
+        <main id="main-content">
+            <header id="topbar">
+                <div class="topbar-left">
+                    <button id="mobileToggle" class="mobile-toggle">☰</button>
+                    <h2 id="page-title">Dashboard</h2>
+                </div>
+                <div class="topbar-right">
+                    <span id="userEmail" class="user-email"></span>
+                </div>
+            </header>
+
+            <div id="page-content">
+                <!-- Pages are loaded here dynamically -->
+            </div>
+        </main>
+    </div>
+
+    <!-- Login Screen -->
+    <div id="loginScreen" style="display:none;">
+        <div class="login-container">
+            <div class="login-box">
+                <h1>GS Mailer</h1>
+                <p class="subtitle">Email Marketing Platform</p>
+                <form id="loginForm">
+                    <div class="form-group">
+                        <label>Email</label>
+                        <input type="email" id="loginEmail" placeholder="you@example.com" required>
+                    </div>
+                    <div class="form-group">
+                        <label>Password</label>
+                        <input type="password" id="loginPassword" placeholder="••••••••" required>
+                    </div>
+                    <button type="submit" class="btn btn-primary btn-block">Sign In</button>
+                </form>
+                <p class="switch-auth">
+                    Don't have an account? <a href="#" id="showSignup">Sign Up</a>
+                </p>
+            </div>
+
+            <div class="login-box" id="signupBox" style="display:none;">
+                <h1>GS Mailer</h1>
+                <p class="subtitle">Create Your Account</p>
+                <form id="signupForm">
+                    <div class="form-group">
+                        <label>Name</label>
+                        <input type="text" id="signupName" placeholder="Your Name">
+                    </div>
+                    <div class="form-group">
+                        <label>Email</label>
+                        <input type="email" id="signupEmail" placeholder="you@example.com" required>
+                    </div>
+                    <div class="form-group">
+                        <label>Password</label>
+                        <input type="password" id="signupPassword" placeholder="•••••••• (min 6 chars)" required>
+                    </div>
+                    <button type="submit" class="btn btn-primary btn-block">Create Account</button>
+                </form>
+                <p class="switch-auth">
+                    Already have an account? <a href="#" id="showLogin">Sign In</a>
+                </p>
+            </div>
+        </div>
+    </div>
+
+    <div id="loadingOverlay" style="display:none;">
+        <div class="spinner"></div>
+        <p>Loading...</p>
+    </div>
+
+    <script src="js/app.js"></script>
+</body>
+</html>
