@@ -1,118 +1,109 @@
 // =====================================================
-// GS MAILER v10 Web SaaS - Main Server
+// GS Mailer Backend Server
 // =====================================================
 
+// Load environment variables FIRST
 require('dotenv').config();
+
 const express = require('express');
 const cors = require('cors');
-const helmet = require('helmet');
-const rateLimit = require('express-rate-limit');
-const cron = require('node-cron');
 
 const app = express();
 
+// =====================================================
+// CORS Configuration
+// =====================================================
+
+const corsOptions = {
+    origin: '*',  // Allow all origins for debugging
+    methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+    allowedHeaders: ['Content-Type', 'Authorization', 'Accept'],
+    credentials: false
+};
+
+app.use(cors(corsOptions));
+app.options('*', cors(corsOptions));
 
 // =====================================================
 // Middleware
 // =====================================================
-app.use(cors({
-    origin: true,
-    credentials: true
-}));
-// Proper CORS with your FRONTEND_URL
-app.use(cors({
-    origin: [
-        process.env.FRONTEND_URL,
-        'https://softappweber.github.io',
-        'https://softappweber.github.io/gsmailer',
-        'http://localhost:3000',
-        'http://127.0.0.1:5500'  // VS Code Live Server
-    ],
-    credentials: true,
-    methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
-    allowedHeaders: ['Content-Type', 'Authorization']
-}));
+
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
-// Rate limiting
-const apiLimiter = rateLimit({
-    windowMs: 60 * 1000, // 1 minute
-    max: 100,
-    message: 'Too many requests, please try again later.'
-});
-app.use('/api/', apiLimiter);
-
-app.get('/', (req, res) => {
-    res.json({ 
-        message: 'GS Mailer API is running',
-        endpoints: {
-            health: '/health',
-            auth: '/api/auth',
-            contacts: '/api/contacts',
-            campaigns: '/api/campaigns',
-            templates: '/api/templates',
-            attachments: '/api/attachments',
-            analytics: '/api/analytics',
-            settings: '/api/settings',
-            tracking: '/api/tracking'
-        }
-    });
+// Request logging
+app.use((req, res, next) => {
+    console.log(`${new Date().toISOString()} - ${req.method} ${req.path}`);
+    next();
 });
 
 // =====================================================
 // Routes
 // =====================================================
 
-app.use('/api/auth', require('./src/routes/auth'));
-app.use('/api/contacts', require('./src/routes/contacts'));
-app.use('/api/campaigns', require('./src/routes/campaigns'));
-app.use('/api/templates', require('./src/routes/templates'));
-app.use('/api/attachments', require('./src/routes/attachments'));
-app.use('/api/analytics', require('./src/routes/analytics'));
-app.use('/api/settings', require('./src/routes/settings'));
-app.use('/api/tracking', require('./src/routes/tracking'));
+// Import routes
+const authRoutes = require('./src/routes/auth');
+const contactsRoutes = require('./src/routes/contacts');
 
-// Health check
+// Mount routes
+app.use('/api/auth', authRoutes);
+app.use('/api/contacts', contactsRoutes);
+
+// =====================================================
+// Health Check
+// =====================================================
+
 app.get('/health', (req, res) => {
-    res.json({ status: 'ok', timestamp: new Date().toISOString() });
+    res.json({ 
+        status: 'ok',
+        timestamp: new Date().toISOString()
+    });
 });
 
 // =====================================================
-// Scheduled Jobs
+// Debug Endpoint
 // =====================================================
 
-// Follow-ups - daily at 9 AM
-cron.schedule('0 9 * * *', async () => {
-    console.log('[CRON] Running follow-up check...');
-    try {
-        const { sendFollowUps } = require('./src/jobs/followups');
-        await sendFollowUps();
-    } catch (err) {
-        console.error('[CRON] Follow-up error:', err);
-    }
+app.get('/debug', (req, res) => {
+    res.json({
+        hasSupabaseUrl: !!process.env.SUPABASE_URL,
+        hasSupabaseAnonKey: !!process.env.SUPABASE_ANON_KEY,
+        hasSupabaseServiceKey: !!process.env.SUPABASE_SERVICE_ROLE_KEY,
+        hasJwtSecret: !!process.env.JWT_SECRET,
+        frontendUrl: process.env.FRONTEND_URL,
+        supabaseUrlPrefix: process.env.SUPABASE_URL ? process.env.SUPABASE_URL.substring(0, 20) + '...' : null,
+        nodeEnv: process.env.NODE_ENV,
+        port: process.env.PORT
+    });
 });
 
-// Bounce detection - every 6 hours
-cron.schedule('0 */6 * * *', async () => {
-    console.log('[CRON] Running bounce detection...');
-    try {
-        const { checkBounces } = require('./src/jobs/bounces');
-        await checkBounces();
-    } catch (err) {
-        console.error('[CRON] Bounce error:', err);
-    }
+// =====================================================
+// Root Route
+// =====================================================
+
+app.get('/', (req, res) => {
+    res.json({
+        message: 'GS Mailer API',
+        endpoints: [
+            '/health',
+            '/debug',
+            '/api/auth/signup',
+            '/api/auth/signin',
+            '/api/auth/login',
+            '/api/auth/signout',
+            '/api/auth/me',
+            '/api/contacts'
+        ]
+    });
 });
 
-// Reply detection - every 4 hours
-cron.schedule('0 */4 * * *', async () => {
-    console.log('[CRON] Running reply detection...');
-    try {
-        const { checkReplies } = require('./src/jobs/replies');
-        await checkReplies();
-    } catch (err) {
-        console.error('[CRON] Reply error:', err);
-    }
+// =====================================================
+// Error Handler
+// =====================================================
+
+app.use((err, req, res, next) => {
+    console.error('Unhandled error:', err);
+    res.status(500).json({ error: 'Internal server error' });
 });
 
 // =====================================================
@@ -120,7 +111,9 @@ cron.schedule('0 */4 * * *', async () => {
 // =====================================================
 
 const PORT = process.env.PORT || 3000;
+
 app.listen(PORT, () => {
-    console.log(`✅ GS Mailer Backend running on port ${PORT}`);
-    console.log(`   Environment: ${process.env.NODE_ENV || 'development'}`);
+    console.log(`✅ GS Mailer server running on port ${PORT}`);
+    console.log(`📍 Health check: http://localhost:${PORT}/health`);
+    console.log(`📍 Debug: http://localhost:${PORT}/debug`);
 });
