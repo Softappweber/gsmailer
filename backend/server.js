@@ -19,10 +19,18 @@ app.use(cors({
     origin: true,
     credentials: true
 }));
-app.use(helmet());
+// Proper CORS with your FRONTEND_URL
 app.use(cors({
-    origin: process.env.FRONTEND_URL || 'http://localhost:5500',
-    credentials: true
+    origin: [
+        process.env.FRONTEND_URL,
+        'https://softappweber.github.io',
+        'https://softappweber.github.io/gsmailer',
+        'http://localhost:3000',
+        'http://127.0.0.1:5500'  // VS Code Live Server
+    ],
+    credentials: true,
+    methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+    allowedHeaders: ['Content-Type', 'Authorization']
 }));
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
