@@ -11,10 +11,14 @@ const cron = require('node-cron');
 
 const app = express();
 
+
 // =====================================================
 // Middleware
 // =====================================================
-
+app.use(cors({
+    origin: true,
+    credentials: true
+}));
 app.use(helmet());
 app.use(cors({
     origin: process.env.FRONTEND_URL || 'http://localhost:5500',
