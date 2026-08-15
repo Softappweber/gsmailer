@@ -1,170 +1,196 @@
-// =====================================================
-// Main App JavaScript
-// =====================================================
-
-// Wait for DOM to be ready
 document.addEventListener('DOMContentLoaded', () => {
     console.log('App loaded');
     
-    // Check if we're on the dashboard
-    if (window.location.pathname.includes('dashboard')) {
+    const token = localStorage.getItem('token');
+    const loginScreen = document.getElementById('loginScreen');
+    const app = document.getElementById('app');
+    const loadingOverlay = document.getElementById('loadingOverlay');
+    
+    if (loadingOverlay) loadingOverlay.style.display = 'none';
+    
+    if (!token || token === 'undefined' || token === 'null') {
+        if (loginScreen) loginScreen.style.display = 'block';
+        if (app) app.style.display = 'none';
+    } else {
+        if (loginScreen) loginScreen.style.display = 'none';
+        if (app) app.style.display = 'block';
         loadDashboard();
-        return;
     }
     
-    // Setup login form
     const loginForm = document.getElementById('loginForm');
     if (loginForm) {
         loginForm.addEventListener('submit', handleLogin);
     }
     
-    // Setup signup form
     const signupForm = document.getElementById('signupForm');
     if (signupForm) {
         signupForm.addEventListener('submit', handleSignup);
     }
+    
+    const showSignup = document.getElementById('showSignup');
+    if (showSignup) {
+        showSignup.addEventListener('click', (e) => {
+            e.preventDefault();
+            const signupBox = document.getElementById('signupBox');
+            if (signupBox) signupBox.style.display = 'block';
+            showSignup.parentElement.style.display = 'none';
+        });
+    }
+    
+    const showLogin = document.getElementById('showLogin');
+    if (showLogin) {
+        showLogin.addEventListener('click', (e) => {
+            e.preventDefault();
+            const signupBox = document.getElementById('signupBox');
+            if (signupBox) signupBox.style.display = 'none';
+            showLogin.parentElement.style.display = 'block';
+        });
+    }
+    
+    const logoutBtn = document.getElementById('logoutBtn');
+    if (logoutBtn) {
+        logoutBtn.addEventListener('click', () => {
+            localStorage.clear();
+            window.location.reload();
+        });
+    }
 });
-
-// =====================================================
-// Handle Login
-// =====================================================
 
 async function handleLogin(e) {
     e.preventDefault();
     
-    const email = document.getElementById('email').value;
-    const password = document.getElementById('password').value;
+    const emailInput = document.getElementById('loginEmail');
+    const passwordInput = document.getElementById('loginPassword');
+    
+    if (!emailInput || !passwordInput) {
+        console.error('Login inputs not found');
+        return;
+    }
+    
+    const email = emailInput.value;
+    const password = passwordInput.value;
     
     console.log('Attempting login for:', email);
     
     try {
-        const response = await apiCall('/api/auth/login', {
+        const response = await fetch('https://gsmailer.onrender.com/api/auth/login', {
             method: 'POST',
-            body: JSON.stringify({ email, password })
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({email: email, password: password})
         });
         
-        // Store token
-        if (response.token) {
-            localStorage.setItem('token', response.token);
-            console.log('Token stored successfully');
-        } else if (response.session && response.session.access_token) {
-            localStorage.setItem('token', response.session.access_token);
-            console.log('Session token stored');
+        const data = await response.json();
+        console.log('Login response:', data);
+        
+        if (data.token) {
+            localStorage.setItem('token', data.token);
+            localStorage.setItem('user', JSON.stringify(data.user));
+            showApp();
+        } else if (data.session && data.session.access_token) {
+            localStorage.setItem('token', data.session.access_token);
+            localStorage.setItem('user', JSON.stringify(data.user));
+            showApp();
         } else {
-            console.error('No token in response:', response);
-            alert('Login failed: No token received');
-            return;
+            alert('Login failed: ' + (data.error || 'No token received'));
         }
-        
-        // Store user data
-        if (response.user) {
-            localStorage.setItem('user', JSON.stringify(response.user));
-        }
-        
-        // Redirect to dashboard
-        window.location.href = './dashboard.html';
     } catch (error) {
         console.error('Login error:', error);
         alert('Login failed: ' + error.message);
     }
 }
 
-// =====================================================
-// Handle Signup
-// =====================================================
-
 async function handleSignup(e) {
     e.preventDefault();
     
-    const email = document.getElementById('email').value;
-    const password = document.getElementById('password').value;
-    const name = document.getElementById('name') ? document.getElementById('name').value : '';
+    const nameInput = document.getElementById('signupName');
+    const emailInput = document.getElementById('signupEmail');
+    const passwordInput = document.getElementById('signupPassword');
+    
+    if (!emailInput || !passwordInput) {
+        console.error('Signup inputs not found');
+        return;
+    }
+    
+    const name = nameInput ? nameInput.value : '';
+    const email = emailInput.value;
+    const password = passwordInput.value;
     
     console.log('Attempting signup for:', email);
     
     try {
-        const response = await apiCall('/api/auth/signup', {
+        const response = await fetch('https://gsmailer.onrender.com/api/auth/signup', {
             method: 'POST',
-            body: JSON.stringify({ email, password, name })
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({email: email, password: password, name: name})
         });
         
-        // Store token
-        if (response.token) {
-            localStorage.setItem('token', response.token);
-            console.log('Token stored successfully');
-        } else if (response.session && response.session.access_token) {
-            localStorage.setItem('token', response.session.access_token);
-            console.log('Session token stored');
+        const data = await response.json();
+        console.log('Signup response:', data);
+        
+        if (data.token) {
+            localStorage.setItem('token', data.token);
+            localStorage.setItem('user', JSON.stringify(data.user));
+            showApp();
+        } else if (data.session && data.session.access_token) {
+            localStorage.setItem('token', data.session.access_token);
+            localStorage.setItem('user', JSON.stringify(data.user));
+            showApp();
         } else {
-            console.error('No token in response:', response);
-            alert('Signup failed: No token received');
-            return;
+            alert('Signup failed: ' + (data.error || 'No token received'));
         }
-        
-        // Store user data
-        if (response.user) {
-            localStorage.setItem('user', JSON.stringify(response.user));
-        }
-        
-        // Redirect to dashboard
-        window.location.href = './dashboard.html';
     } catch (error) {
         console.error('Signup error:', error);
         alert('Signup failed: ' + error.message);
     }
 }
 
-// =====================================================
-// Load Dashboard
-// =====================================================
+function showApp() {
+    const loginScreen = document.getElementById('loginScreen');
+    const app = document.getElementById('app');
+    const loadingOverlay = document.getElementById('loadingOverlay');
+    
+    if (loadingOverlay) loadingOverlay.style.display = 'none';
+    if (loginScreen) loginScreen.style.display = 'none';
+    if (app) app.style.display = 'block';
+    
+    loadDashboard();
+}
 
 async function loadDashboard() {
     console.log('Loading dashboard...');
     
-    const token = localStorage.getItem('token');
-    console.log('Token available:', !!token);
-    
-    if (!token || token === 'undefined' || token === 'null') {
-        console.error('No valid token found');
-        window.location.href = './index.html';
-        return;
-    }
+    const pageContent = document.getElementById('page-content');
     
     try {
-        // Test API connection
-        const healthCheck = await fetch('https://gsmailer.onrender.com/health');
-        console.log('Backend health:', await healthCheck.json());
+        const token = localStorage.getItem('token');
         
-        // Load contacts
-        const contacts = await apiCall('/api/contacts');
-        console.log('Contacts loaded:', contacts);
+        const response = await fetch('https://gsmailer.onrender.com/api/contacts', {
+            method: 'GET',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': 'Bearer ' + token
+            }
+        });
         
-        // Display contacts
-        const dashboardElement = document.getElementById('dashboard');
-        if (dashboardElement) {
+        const contacts = await response.json();
+        console.log('Contacts:', contacts);
+        
+        if (pageContent) {
             if (contacts && contacts.length > 0) {
-                dashboardElement.innerHTML = contacts.map(contact => `
+                pageContent.innerHTML = contacts.map(contact => `
                     <div class="contact-card">
                         <h3>${contact.name || 'No Name'}</h3>
                         <p>${contact.email}</p>
                     </div>
                 `).join('');
             } else {
-                dashboardElement.innerHTML = '<p>No contacts found. Add your first contact!</p>';
+                pageContent.innerHTML = '<p>Welcome to GS Mailer! No contacts found.</p>';
             }
         }
     } catch (error) {
-        console.error('Dashboard load error:', error);
-        
-        const dashboardElement = document.getElementById('dashboard');
-        if (dashboardElement) {
-            dashboardElement.innerHTML = `
-                <div class="error-message">
-                    <h3>Failed to load dashboard</h3>
-                    <p>Error: ${error.message}</p>
-                    <button onclick="window.location.reload()">Retry</button>
-                </div>
-            `;
+        console.error('Dashboard error:', error);
+        if (pageContent) {
+            pageContent.innerHTML = '<p style="color:red;">Error loading dashboard: ' + error.message + '</p>';
         }
     }
 }
