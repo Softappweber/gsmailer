@@ -24,6 +24,7 @@ router.post('/signup', async (req, res) => {
             return res.status(400).json({ error: 'Email and password required' });
         }
         
+        // Sign up user
         const { data, error } = await supabase.auth.signUp({
             email,
             password,
@@ -36,23 +37,45 @@ router.post('/signup', async (req, res) => {
             return res.status(400).json({ error: error.message });
         }
         
+        // If session is null (email confirmation required), try to sign in immediately
+        if (data.user && !data.session) {
+            console.log('Session is null, attempting immediate sign in...');
+            
+            const { data: signInData, error: signInError } = await supabase.auth.signInWithPassword({
+                email,
+                password
+            });
+            
+            if (!signInError && signInData.session) {
+                data.session = signInData.session;
+                console.log('Immediate sign in successful');
+            } else {
+                console.log('Immediate sign in failed:', signInError?.message);
+            }
+        }
+        
         // Create default settings for new user
         if (data.user) {
-            const defaultSettings = [
-                { key: 'DAILY_LIMIT', value: '20' },
-                { key: 'WAIT_TIME', value: '3000' },
-                { key: 'SENDER_NAME', value: 'GS Mailer' },
-                { key: 'JOB_TITLE', value: 'Email Marketing Specialist' }
-            ];
-            
-            for (const setting of defaultSettings) {
-                await supabase
-                    .from('settings')
-                    .insert({
-                        user_id: data.user.id,
-                        key: setting.key,
-                        value: setting.value
-                    });
+            try {
+                const defaultSettings = [
+                    { key: 'DAILY_LIMIT', value: '20' },
+                    { key: 'WAIT_TIME', value: '3000' },
+                    { key: 'SENDER_NAME', value: 'GS Mailer' },
+                    { key: 'JOB_TITLE', value: 'Email Marketing Specialist' }
+                ];
+                
+                for (const setting of defaultSettings) {
+                    await supabase
+                        .from('settings')
+                        .insert({
+                            user_id: data.user.id,
+                            key: setting.key,
+                            value: setting.value
+                        });
+                }
+            } catch (settingsError) {
+                console.error('Error creating default settings:', settingsError);
+                // Don't fail the signup if settings creation fails
             }
         }
         
@@ -102,7 +125,7 @@ router.post('/signin', async (req, res) => {
 });
 
 // =====================================================
-// Login (alias for signin - matches frontend)
+// Login (alias for signin)
 // =====================================================
 
 router.post('/login', async (req, res) => {
