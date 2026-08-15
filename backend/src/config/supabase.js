@@ -1,22 +1,35 @@
 // =====================================================
-// Supabase Client Configuration
+// Supabase Client Configuration (FIXED)
 // =====================================================
 
 const { createClient } = require('@supabase/supabase-js');
 
+// Don't throw at module level - handle gracefully
 const supabaseUrl = process.env.SUPABASE_URL;
 const supabaseAnonKey = process.env.SUPABASE_ANON_KEY;
 const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
 
-if (!supabaseUrl || !supabaseAnonKey) {
-    throw new Error('Missing Supabase environment variables');
+// Create clients only if we have the required vars
+let supabase = null;
+let supabaseAdmin = null;
+
+if (supabaseUrl && supabaseAnonKey) {
+    supabase = createClient(supabaseUrl, supabaseAnonKey);
+    console.log('✅ Supabase client initialized successfully');
+} else {
+    console.warn('⚠️ Missing SUPABASE_URL or SUPABASE_ANON_KEY - Supabase client not initialized');
 }
 
-// Client for frontend API (uses anon key)
-const supabase = createClient(supabaseUrl, supabaseAnonKey);
+if (supabaseUrl && supabaseServiceKey) {
+    supabaseAdmin = createClient(supabaseUrl, supabaseServiceKey);
+    console.log('✅ Supabase admin client initialized successfully');
+} else if (supabaseUrl && supabaseAnonKey) {
+    // Fallback to anon key if service key is missing
+    supabaseAdmin = supabase;
+    console.warn('⚠️ Using anon key for admin client - some operations may fail');
+} else {
+    console.warn('⚠️ Supabase admin client not initialized');
+}
 
-// Admin client for backend operations (uses service role)
-const supabaseServiceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
-const supabaseAdmin = createClient(supabaseUrl, supabaseServiceRoleKey || supabaseAnonKey);;
-
+// Export null clients instead of throwing
 module.exports = { supabase, supabaseAdmin };
