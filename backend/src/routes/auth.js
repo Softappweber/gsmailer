@@ -8,6 +8,10 @@ const { authenticate } = require('../middleware/auth');
 
 const router = express.Router();
 
+// Debug logging
+console.log('Auth routes loaded');
+console.log('Supabase client available:', !!supabase);
+
 // =====================================================
 // Sign Up
 // =====================================================
@@ -55,7 +59,8 @@ router.post('/signup', async (req, res) => {
         res.json({
             success: true,
             user: data.user,
-            session: data.session
+            session: data.session,
+            token: data.session ? data.session.access_token : null
         });
     } catch (err) {
         console.error('Signup error:', err);
@@ -87,10 +92,44 @@ router.post('/signin', async (req, res) => {
         res.json({
             success: true,
             user: data.user,
-            session: data.session
+            session: data.session,
+            token: data.session ? data.session.access_token : null
         });
     } catch (err) {
         console.error('Signin error:', err);
+        res.status(500).json({ error: 'Internal server error' });
+    }
+});
+
+// =====================================================
+// Login (alias for signin - matches frontend)
+// =====================================================
+
+router.post('/login', async (req, res) => {
+    try {
+        const { email, password } = req.body;
+        
+        if (!email || !password) {
+            return res.status(400).json({ error: 'Email and password required' });
+        }
+        
+        const { data, error } = await supabase.auth.signInWithPassword({
+            email,
+            password
+        });
+        
+        if (error) {
+            return res.status(400).json({ error: error.message });
+        }
+        
+        res.json({
+            success: true,
+            user: data.user,
+            session: data.session,
+            token: data.session ? data.session.access_token : null
+        });
+    } catch (err) {
+        console.error('Login error:', err);
         res.status(500).json({ error: 'Internal server error' });
     }
 });
