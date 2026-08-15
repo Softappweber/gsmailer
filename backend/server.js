@@ -31,6 +31,23 @@ const apiLimiter = rateLimit({
 });
 app.use('/api/', apiLimiter);
 
+app.get('/', (req, res) => {
+    res.json({ 
+        message: 'GS Mailer API is running',
+        endpoints: {
+            health: '/health',
+            auth: '/api/auth',
+            contacts: '/api/contacts',
+            campaigns: '/api/campaigns',
+            templates: '/api/templates',
+            attachments: '/api/attachments',
+            analytics: '/api/analytics',
+            settings: '/api/settings',
+            tracking: '/api/tracking'
+        }
+    });
+});
+
 // =====================================================
 // Routes
 // =====================================================
